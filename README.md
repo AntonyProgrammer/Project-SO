@@ -1,2 +1,2 @@
 # Project-SO
-Progetto di sistemi operativi.
+Progetto di Sistemi Operativi a cura di Antonio Federico.
