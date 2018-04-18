@@ -89,7 +89,6 @@ void SemDescriptorList_print(ListHead* l){
   printf("]");
 }
 
-
 void SemDescriptorPtrList_print(ListHead* l){
   ListItem* aux=l->first;
   printf("[");
@@ -104,4 +103,14 @@ void SemDescriptorPtrList_print(ListHead* l){
     aux=aux->next;
   }
   printf("]");
+}
+
+SemDescriptor* Find_sd(ListHead* list, int key) {
+  ListItem* aux = list -> first;
+  while(aux) {
+    SemDescriptor* d = (SemDescriptor*)aux;
+    if (d -> semaphore -> id == key) return d;
+    else aux = aux -> next;
+  }
+  return NULL;
 }
