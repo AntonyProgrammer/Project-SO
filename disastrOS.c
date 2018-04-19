@@ -187,13 +187,13 @@ void disastrOS_start(void (*f)(void*), void* f_args, char* logfile){
 
   // fill these with the syscall handlers
   syscall_vector[DSOS_CALL_SEMOPEN]      = internal_semOpen;
-  syscall_numarg[DSOS_CALL_SEMOPEN]      = 1;
+  syscall_numarg[DSOS_CALL_SEMOPEN]      = 2; //NB: 2, non 1
 
   syscall_vector[DSOS_CALL_SEMCLOSE]      = internal_semClose;
   syscall_numarg[DSOS_CALL_SEMCLOSE]      = 1;
 
   syscall_vector[DSOS_CALL_SEMPOST]      = internal_semPost;
-  syscall_numarg[DSOS_CALL_SEMPOST]      = 2;
+  syscall_numarg[DSOS_CALL_SEMPOST]      = 1; //NB: 1, non 2
 
   syscall_vector[DSOS_CALL_SEMWAIT]      = internal_semWait;
   syscall_numarg[DSOS_CALL_SEMWAIT]      = 1;
