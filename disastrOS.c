@@ -32,15 +32,15 @@ ListHead semaphores_list;
 SyscallFunctionType syscall_vector[DSOS_MAX_SYSCALLS];
 int syscall_numarg[DSOS_MAX_SYSCALLS];
 
-ucontext_t interrupt_context;           
+ucontext_t interrupt_context;
 ucontext_t trap_context;
 ucontext_t main_context;
 ucontext_t idle_context;
 int shutdown_now=0; // used for termination
 char system_stack[STACK_SIZE];
 
-sigset_t signal_set;                       // process wide signal mask 
-char signal_stack[STACK_SIZE];     
+sigset_t signal_set;                       // process wide signal mask
+char signal_stack[STACK_SIZE];
 volatile int disastrOS_time=0;
 
 
@@ -86,7 +86,7 @@ void setupSignals(void) {
 
 
 int disastrOS_syscall(int syscall_num, ...) {
-  assert(running); 
+  assert(running);
   va_list ap;
   if (syscall_num<0||syscall_num>DSOS_MAX_SYSCALLS)
     return DSOS_ESYSCALL_OUT_OF_RANGE;
@@ -110,7 +110,7 @@ void disastrOS_trap(){
 	    running->pid,
 	    "SYSCALL_IN",
 	    syscall_num);
-  
+
   if (syscall_num<0||syscall_num>DSOS_MAX_SYSCALLS) {
     running->syscall_retvalue = DSOS_ESYSCALL_OUT_OF_RANGE;
     goto return_to_process;
@@ -120,7 +120,7 @@ void disastrOS_trap(){
     running->syscall_retvalue = DSOS_ESYSCALL_NOT_IMPLEMENTED;
     goto return_to_process;
   }
- 
+
   disastrOS_debug("syscall: %d, pid: %d\n", syscall_num, running->pid);
   (*syscall_vector[syscall_num])();
   //internal_schedule();
@@ -139,13 +139,16 @@ void disastrOS_trap(){
   }
 }
 
-void disastrOS_start(void (*f)(void*), void* f_args, char* logfile){  
+void disastrOS_start(void (*f)(void*), void* f_args, char* logfile){
   /* INITIALIZATION OF SYSTEM STRUCTURES*/
   disastrOS_debug("initializing system structures\n");
   PCB_init();
   Timer_init();
   Resource_init();
   Descriptor_init();
+  //Per utilizzare le funzioni sui semafori
+  Semaphore_init();
+  SemDescriptor_init();
   init_pcb=0;
 
   // populate the vector of syscalls and number of arguments for each syscall
@@ -154,7 +157,7 @@ void disastrOS_start(void (*f)(void*), void* f_args, char* logfile){
   }
   syscall_vector[DSOS_CALL_PREEMPT]   = internal_preempt;
   syscall_numarg[DSOS_CALL_PREEMPT]   = 0;
-  
+
   syscall_vector[DSOS_CALL_FORK]      = internal_fork;
   syscall_numarg[DSOS_CALL_FORK]      = 0;
 
@@ -194,7 +197,7 @@ void disastrOS_start(void (*f)(void*), void* f_args, char* logfile){
 
   syscall_vector[DSOS_CALL_SEMWAIT]      = internal_semWait;
   syscall_numarg[DSOS_CALL_SEMWAIT]      = 1;
-  
+
   // setup the scheduling lists
   running=0;
   List_init(&ready_list);
@@ -229,13 +232,13 @@ void disastrOS_start(void (*f)(void*), void* f_args, char* logfile){
   makecontext(&interrupt_context, timerInterrupt, 0); //< this is a context for the interrupt
 
 
-  
+
 
   /* STARTING FIRST PROCESS AND IDLING*/
   running=PCB_alloc();
   running->status=Running;
   init_pcb=running;
-  
+
   // create a trampoline for the first process (see spawn)
   disastrOS_debug("preparing trampoline for first process ... ");
   getcontext(&running->cpu_state);
@@ -243,13 +246,13 @@ void disastrOS_start(void (*f)(void*), void* f_args, char* logfile){
   running->cpu_state.uc_stack.ss_size = STACK_SIZE;
   running->cpu_state.uc_stack.ss_flags = 0;
   running->cpu_state.uc_link = &main_context;
-  
+
   makecontext(&running->cpu_state, (void(*)()) f, 1, f_args);
 
 
   // initialize timers and signals
   setupSignals();
-  
+
   // we start the first process
   disastrOS_debug("starting\n");
   if (logfile){
@@ -305,7 +308,18 @@ int disastrOS_destroyResource(int resource_id) {
   return disastrOS_syscall(DSOS_CALL_DESTROY_RESOURCE, resource_id);
 }
 
-
+int disastrOS_semOpen(int sem_id, int value) {
+      return disastrOS_syscall(DSOS_CALL_SEMOPEN, sem_id,value);
+}
+int disastrOS_semClose(int fd) {
+      return disastrOS_syscall(DSOS_CALL_SEMCLOSE,fd);
+}
+int disastrOS_semPost(int fd) {
+      return disastrOS_syscall(DSOS_CALL_SEMPOST,fd);
+}
+int disastrOS_semWait(int fd) {
+      return disastrOS_syscall(DSOS_CALL_SEMWAIT,fd);
+}
 
 void disastrOS_printStatus(){
   printf("****************** DisastrOS ******************\n");
